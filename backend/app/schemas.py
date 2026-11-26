@@ -71,3 +71,12 @@ class PackageOut(BaseModel):
     location: str | None
     days_left: int
     status: ExpiryStatus
+
+
+class SettingsIn(BaseModel):
+    threshold_days: Literal[7, 14, 30]
+    notifications_enabled: bool = True
+
+
+class SettingsOut(SettingsIn):
+    model_config = ConfigDict(from_attributes=True)

@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from typing import Literal
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -20,6 +22,7 @@ def get_own_package(package_id: int, user: models.User, db: Session) -> models.P
 
 @router.get("", response_model=list[schemas.PackageOut])
 def list_packages(
+    status_filter: Literal["ok", "expiring", "expired"] | None = Query(default=None, alias="status"),
     q: str | None = None,
     user=Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -34,6 +37,8 @@ def list_packages(
         stmt = stmt.where(models.Medicine.name.ilike(f"%{q}%"))
     threshold = user.settings.threshold_days
     result = [package_to_out(p, threshold) for p in db.scalars(stmt).all()]
+    if status_filter:
+        result = [p for p in result if p.status == status_filter]
     return result
 
 
