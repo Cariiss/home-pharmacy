@@ -1,9 +1,6 @@
 from fastapi import FastAPI
 
-from .database import Base, engine
 from .routers import auth, medicines, packages, settings
-
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Домашняя аптека API", version="0.1.0")
 app.include_router(auth.router)
