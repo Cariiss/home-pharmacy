@@ -1,0 +1,35 @@
+digraph ER {
+  graph [rankdir=LR, fontname="Helvetica", nodesep=0.6, ranksep=1.1, dpi=200];
+  node  [shape=plain, fontname="Helvetica"];
+  edge  [fontname="Helvetica", fontsize=11, color="#555555", arrowhead=crow, arrowtail=tee, dir=both];
+  users [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="6">
+   <tr><td bgcolor="#2f6fb0" colspan="2"><font color="white"><b>users</b></font></td></tr>
+   <tr><td align="left"><b>id</b></td><td align="left">PK, integer</td></tr>
+   <tr><td align="left">email</td><td align="left">varchar(255), unique</td></tr>
+   <tr><td align="left">password_hash</td><td align="left">varchar(255)</td></tr>
+   <tr><td align="left">created_at</td><td align="left">timestamptz</td></tr></table>>];
+  medicines [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="6">
+   <tr><td bgcolor="#2f6fb0" colspan="2"><font color="white"><b>medicines</b></font></td></tr>
+   <tr><td align="left"><b>id</b></td><td align="left">PK, integer</td></tr>
+   <tr><td align="left">user_id</td><td align="left">FK → users.id</td></tr>
+   <tr><td align="left">name</td><td align="left">varchar(200)</td></tr>
+   <tr><td align="left">form</td><td align="left">varchar(100), null</td></tr>
+   <tr><td align="left">dosage</td><td align="left">varchar(100), null</td></tr></table>>];
+  packages [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="6">
+   <tr><td bgcolor="#2f6fb0" colspan="2"><font color="white"><b>packages</b></font></td></tr>
+   <tr><td align="left"><b>id</b></td><td align="left">PK, integer</td></tr>
+   <tr><td align="left">medicine_id</td><td align="left">FK → medicines.id</td></tr>
+   <tr><td align="left">expiry_date</td><td align="left">date</td></tr>
+   <tr><td align="left">quantity</td><td align="left">integer, &gt; 0</td></tr>
+   <tr><td align="left">location</td><td align="left">varchar(100), null</td></tr>
+   <tr><td align="left">created_at</td><td align="left">timestamptz</td></tr></table>>];
+  reminder_settings [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="6">
+   <tr><td bgcolor="#2f6fb0" colspan="2"><font color="white"><b>reminder_settings</b></font></td></tr>
+   <tr><td align="left"><b>id</b></td><td align="left">PK, integer</td></tr>
+   <tr><td align="left">user_id</td><td align="left">FK → users.id, unique</td></tr>
+   <tr><td align="left">threshold_days</td><td align="left">integer (7, 14, 30)</td></tr>
+   <tr><td align="left">notifications_enabled</td><td align="left">boolean</td></tr></table>>];
+  users -> medicines [label="1 : N"];
+  medicines -> packages [label="1 : N"];
+  users -> reminder_settings [label="1 : 1", arrowhead=tee];
+}
