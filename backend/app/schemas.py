@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class RegisterIn(BaseModel):
@@ -25,6 +25,14 @@ class MedicineIn(BaseModel):
     form: str | None = Field(default=None, max_length=100)
     dosage: str | None = Field(default=None, max_length=100)
 
+    @field_validator("name")
+    @classmethod
+    def name_not_blank(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Название не может быть пустым")
+        return value
+
 
 class MedicineOut(MedicineIn):
     model_config = ConfigDict(from_attributes=True)
@@ -43,6 +51,12 @@ class PackageUpdate(BaseModel):
     quantity: int | None = Field(default=None, gt=0)
     location: str | None = Field(default=None, max_length=100)
 
+    @field_validator("expiry_date", "quantity")
+    @classmethod
+    def required_not_null(cls, value):
+        if value is None:
+            raise ValueError("Поле нельзя очистить")
+        return value
 
 
 ExpiryStatus = Literal["ok", "expiring", "expired"]
