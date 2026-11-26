@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
@@ -18,7 +19,12 @@ def register(data: schemas.RegisterIn, db: Session = Depends(get_db)):
     user = models.User(email=email, password_hash=hash_password(data.password))
     user.settings = models.ReminderSettings(threshold_days=30, notifications_enabled=True)
     db.add(user)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # два одновременных запроса с одним email: второй упрётся в уникальный индекс
+        db.rollback()
+        raise HTTPException(status.HTTP_409_CONFLICT, "Пользователь с таким email уже существует")
     db.refresh(user)
     return user
 

@@ -8,6 +8,14 @@ class RegisterIn(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=72)
 
+    @field_validator("password")
+    @classmethod
+    def password_fits_bcrypt(cls, value: str) -> str:
+        # bcrypt учитывает только первые 72 байта; русская буква занимает 2 байта
+        if len(value.encode("utf-8")) > 72:
+            raise ValueError("Пароль слишком длинный (не больше 72 байт)")
+        return value
+
 
 class TokenOut(BaseModel):
     access_token: str
