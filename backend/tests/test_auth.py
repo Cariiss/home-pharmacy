@@ -1,8 +1,11 @@
 from datetime import datetime, timedelta, timezone
 
 import jwt
+import pytest
 
 from app.config import JWT_SECRET
+
+from .conftest import register_and_login
 
 
 def test_register_ok(client):
@@ -94,3 +97,62 @@ def test_login_long_password_rejected(client):
     client.post("/auth/register", json={"email": "anna@test.ru", "password": "Secret123"})
     r = client.post("/auth/login", data={"username": "anna@test.ru", "password": "п" * 40})
     assert r.status_code == 401
+
+
+# --- границы пароля (bcrypt: не больше 72 байт) ---
+
+def test_password_72_bytes_cyrillic_ok(client):
+    # 36 русских букв = ровно 72 байта
+    pwd = "п" * 36
+    assert client.post("/auth/register", json={"email": "anna@test.ru", "password": pwd}).status_code == 201
+    assert client.post("/auth/login", data={"username": "anna@test.ru", "password": pwd}).status_code == 200
+
+
+def test_password_length_boundaries(client):
+    assert client.post("/auth/register", json={"email": "anna@test.ru", "password": "a" * 7}).status_code == 422
+    assert client.post("/auth/register", json={"email": "anna@test.ru", "password": "a" * 8}).status_code == 201
+    assert client.post("/auth/register", json={"email": "boris@test.ru", "password": "a" * 73}).status_code == 422
+
+
+def test_register_missing_fields(client):
+    assert client.post("/auth/register", json={"email": "anna@test.ru"}).status_code == 422
+    assert client.post("/auth/register", json={"password": "Secret123"}).status_code == 422
+
+
+def test_login_missing_fields(client):
+    assert client.post("/auth/login", data={"username": "anna@test.ru"}).status_code == 422
+
+
+def test_register_creates_default_settings(client):
+    headers = register_and_login(client, "boris@test.ru")
+    assert client.get("/settings", headers=headers).json() == {"threshold_days": 30, "notifications_enabled": True}
+
+
+# --- 401 на всех защищённых адресах ---
+
+PROTECTED = [
+    ("get", "/auth/me", None),
+    ("get", "/medicines", None),
+    ("post", "/medicines", {"name": "Ибупрофен"}),
+    ("get", "/medicines/1", None),
+    ("put", "/medicines/1", {"name": "Ибупрофен"}),
+    ("delete", "/medicines/1", None),
+    ("get", "/packages", None),
+    ("post", "/packages", {"medicine_id": 1, "expiry_date": "2030-01-01", "quantity": 1}),
+    ("get", "/packages/1", None),
+    ("put", "/packages/1", {"quantity": 2}),
+    ("delete", "/packages/1", None),
+    ("get", "/settings", None),
+    ("put", "/settings", {"threshold_days": 7, "notifications_enabled": True}),
+]
+
+
+@pytest.mark.parametrize("method, url, body", PROTECTED)
+def test_protected_without_token(client, method, url, body):
+    kwargs = {"json": body} if body is not None else {}
+    assert client.request(method, url, **kwargs).status_code == 401
+
+
+def test_health(client):
+    r = client.get("/health")
+    assert r.status_code == 200 and r.json() == {"status": "ok"}

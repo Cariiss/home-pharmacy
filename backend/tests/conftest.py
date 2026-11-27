@@ -2,6 +2,8 @@
 from datetime import date, timedelta
 
 import pytest
+from alembic import command
+from alembic.config import Config
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
@@ -9,11 +11,18 @@ from sqlalchemy.orm import sessionmaker
 
 from app import models  # noqa: F401
 from app.config import DATABASE_URL
-from app.database import Base, get_db
+from app.database import get_db
 from app.main import app
 
 TEST_DB = "pharmacy_test"
 test_url = make_url(DATABASE_URL).set(database=TEST_DB)
+
+
+def alembic_config() -> Config:
+    """Настройки Alembic для тестовой базы."""
+    cfg = Config("alembic.ini")
+    cfg.attributes["database_url"] = test_url.render_as_string(hide_password=False)
+    return cfg
 
 
 @pytest.fixture(scope="session")
@@ -22,8 +31,9 @@ def engine():
     with admin.connect() as conn:
         conn.execute(text(f"DROP DATABASE IF EXISTS {TEST_DB}"))
         conn.execute(text(f"CREATE DATABASE {TEST_DB}"))
+    # схема строится теми же миграциями, что и рабочая база
+    command.upgrade(alembic_config(), "head")
     eng = create_engine(test_url)
-    Base.metadata.create_all(eng)
     yield eng
     eng.dispose()
     with admin.connect() as conn:
