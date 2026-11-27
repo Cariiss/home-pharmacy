@@ -12,6 +12,7 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -130,6 +131,12 @@ fun PackageFormScreen(onBack: () -> Unit, onMedicines: () -> Unit, vm: PackageFo
                                 onClick = { vm.medicineId = medicine.id; menuOpen = false },
                             )
                         }
+                        // если нужного препарата нет — переходим в справочник и добавляем его там
+                        HorizontalDivider()
+                        DropdownMenuItem(
+                            text = { Text("+ Новый препарат", color = MaterialTheme.colorScheme.primary) },
+                            onClick = { menuOpen = false; onMedicines() },
+                        )
                     }
                 }
             }
