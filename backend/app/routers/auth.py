@@ -17,7 +17,7 @@ def register(data: schemas.RegisterIn, db: Session = Depends(get_db)):
     if db.scalar(select(models.User).where(models.User.email == email)):
         raise HTTPException(status.HTTP_409_CONFLICT, "Пользователь с таким email уже существует")
     user = models.User(email=email, password_hash=hash_password(data.password))
-    user.settings = models.ReminderSettings(threshold_days=30, notifications_enabled=True)
+    user.settings = models.ReminderSettings()
     db.add(user)
     try:
         db.commit()

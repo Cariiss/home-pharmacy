@@ -1,7 +1,7 @@
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, pool
 
 from app import models  # noqa: F401  регистрирует таблицы в Base.metadata
 from app.config import DATABASE_URL
@@ -23,7 +23,8 @@ def run_migrations_offline() -> None:
 def run_migrations_online() -> None:
     # URL передаётся напрямую в движок, а не через alembic.ini:
     # configparser воспринимает символ % в пароле как спецсимвол.
-    engine = create_engine(DATABASE_URL)
+    # тесты передают адрес базы pharmacy_test; NullPool закрывает соединение сразу после миграций
+    engine = create_engine(config.attributes.get("database_url", DATABASE_URL), poolclass=pool.NullPool)
     with engine.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():

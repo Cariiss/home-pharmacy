@@ -4,6 +4,12 @@ from datetime import date
 from . import models, schemas
 
 
+def like_pattern(query: str) -> str:
+    """Шаблон для ilike: % и _ в запросе ищутся как обычные символы."""
+    escaped = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return f"%{escaped}%"
+
+
 def expiry_status(expiry_date: date, threshold_days: int, today: date | None = None) -> tuple[int, str]:
     today = today or date.today()
     days_left = (expiry_date - today).days

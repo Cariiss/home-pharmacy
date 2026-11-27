@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from .. import models, schemas
 from ..database import get_db
 from ..security import get_current_user
+from ..services import like_pattern
 
 router = APIRouter(prefix="/medicines", tags=["Справочник лекарств"])
 
@@ -20,8 +21,8 @@ def get_own_medicine(medicine_id: int, user: models.User, db: Session) -> models
 def list_medicines(q: str | None = None, user=Depends(get_current_user), db: Session = Depends(get_db)):
     stmt = select(models.Medicine).where(models.Medicine.user_id == user.id)
     if q:
-        stmt = stmt.where(models.Medicine.name.ilike(f"%{q}%"))
-    return db.scalars(stmt.order_by(models.Medicine.name)).all()
+        stmt = stmt.where(models.Medicine.name.ilike(like_pattern(q), escape="\\"))
+    return db.scalars(stmt.order_by(models.Medicine.name, models.Medicine.id)).all()
 
 
 @router.post("", response_model=schemas.MedicineOut, status_code=status.HTTP_201_CREATED)

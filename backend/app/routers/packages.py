@@ -2,12 +2,12 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, contains_eager
 
 from .. import models, schemas
 from ..database import get_db
 from ..security import get_current_user
-from ..services import package_to_out
+from ..services import like_pattern, package_to_out
 from .medicines import get_own_medicine
 
 router = APIRouter(prefix="/packages", tags=["Упаковки"])
@@ -30,11 +30,12 @@ def list_packages(
     stmt = (
         select(models.Package)
         .join(models.Medicine)
+        .options(contains_eager(models.Package.medicine))
         .where(models.Medicine.user_id == user.id)
-        .order_by(models.Package.expiry_date)
+        .order_by(models.Package.expiry_date, models.Package.id)
     )
     if q:
-        stmt = stmt.where(models.Medicine.name.ilike(f"%{q}%"))
+        stmt = stmt.where(models.Medicine.name.ilike(like_pattern(q), escape="\\"))
     threshold = user.settings.threshold_days
     result = [package_to_out(p, threshold) for p in db.scalars(stmt).all()]
     if status_filter:

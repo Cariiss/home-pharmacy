@@ -17,6 +17,8 @@ services:
     build: ./backend
     env_file: .env
     environment:
+      # «сегодня» для статуса срока считается по Москве (POSIX-формат, tzdata в образе не нужен)
+      TZ: MSK-3
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
     ports:
       - "8000:8000"

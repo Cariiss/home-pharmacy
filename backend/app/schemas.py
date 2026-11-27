@@ -41,6 +41,13 @@ class MedicineIn(BaseModel):
             raise ValueError("Название не может быть пустым")
         return value
 
+    @field_validator("form", "dosage")
+    @classmethod
+    def blank_to_none(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return value.strip() or None
+
 
 class MedicineOut(MedicineIn):
     model_config = ConfigDict(from_attributes=True)
@@ -50,13 +57,13 @@ class MedicineOut(MedicineIn):
 class PackageIn(BaseModel):
     medicine_id: int
     expiry_date: date
-    quantity: int = Field(gt=0)
+    quantity: int = Field(gt=0, le=10000)
     location: str | None = Field(default=None, max_length=100)
 
 
 class PackageUpdate(BaseModel):
     expiry_date: date | None = None
-    quantity: int | None = Field(default=None, gt=0)
+    quantity: int | None = Field(default=None, gt=0, le=10000)
     location: str | None = Field(default=None, max_length=100)
 
     @field_validator("expiry_date", "quantity")
